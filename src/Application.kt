@@ -1,7 +1,6 @@
 package info.vlassiev.serg
 
 import info.vlassiev.serg.model.getFolders
-import info.vlassiev.serg.repository.spinUp
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -40,10 +39,5 @@ fun Application.module() {
             }
         }
     }
-
-    Thread {
-        Thread.sleep(30_000)
-        spinUp()
-    }.start()
 }
 
