@@ -31,32 +31,32 @@ parameters:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo
+  name: mongo-cdc
   labels:
-    name: mongo
+    name: mongo-cdc
 spec:
   ports:
     - port: 27017
       targetPort: 27017
   clusterIP: None
   selector:
-    app: mongo
+    app: mongo-cdc
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: mongo
+  name: mongo-cdc
 spec:
-  serviceName: "mongo"
+  serviceName: "mongo-cdc"
   replicas: 3
   template:
     metadata:
       labels:
-        app: mongo
+        app: mongo-cdc
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-        - name: mongo
+        - name: mongo-cdc
           image: mongo
           imagePullPolicy: Always
           command:
@@ -77,9 +77,9 @@ spec:
               cpu: 100m
               memory: 2560M
           volumeMounts:
-            - name: mongo-persistent-storage
+            - name: mongo-cdc-persistent-storage
               mountPath: /data/db
-        - name: mongo-sidecar
+        - name: mongo-cdc-sidecar
           image: cvallance/mongo-k8s-sidecar
           resources:
             requests:
@@ -90,10 +90,10 @@ spec:
               memory: 2560M
           env:
             - name: MONGO_SIDECAR_POD_LABELS
-              value: "app=mongo"
+              value: "app=mongo-cdc"
   volumeClaimTemplates:
     - metadata:
-        name: mongo-persistent-storage
+        name: mongo-cdc-persistent-storage
         # fast storage is a bit more expensive, so going with a standard one for now
 #        annotations:
 #          volume.beta.kubernetes.io/storage-class: "fast"
