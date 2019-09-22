@@ -47,7 +47,7 @@ private fun getImageExifData(tags: Collection<Tag>): ImageMetadata {
     tags.forEach { tag -> when(tag.tagName) {
         "Date/Time Original" -> {
             try {
-                metadata.originalTime = SimpleDateFormat("YYYY:MM:DD HH:mm:ss").parse(tag.description).time
+                metadata.originalTime = SimpleDateFormat("yyyy:MM:dd HH:mm:ss").parse(tag.description).time
             } catch (e: ParseException) {
                 "Unable to format date ${tag.description}: ${e.message}"
             }

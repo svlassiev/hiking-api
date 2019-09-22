@@ -35,6 +35,9 @@ spec:
         - name: hiking-api
           image: svlassiev/hiking-api:19.9.22.4
           imagePullPolicy: Always
+          env:
+            - name: MONGO_CONNECTION_STRING
+              value: "mongodb://mongo-cdc-0.mongo-cdc,mongo-cdc-1.mongo-cdc,mongo-cdc-2.mongo-cdc:27017/?replicaSet=rs0&readPreference=primaryPreferred&connectTimeoutMS=80000&socketTimeoutMS=20000"
           ports:
             - name: http
               containerPort: 9090

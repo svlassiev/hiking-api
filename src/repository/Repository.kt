@@ -1,21 +1,20 @@
 package info.vlassiev.serg.repository
 
-import com.mongodb.ConnectionString
 import info.vlassiev.serg.image.extractImageMetadata
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.model.getFolders
 import org.litote.kmongo.KMongo
+import org.litote.kmongo.`in`
 import org.litote.kmongo.getCollection
 import org.slf4j.LoggerFactory
 
-class Repository() {
+class Repository(connectionString: String) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val connectionString = ConnectionString("mongodb://mongo-cdc-0.mongo-cdc,mongo-cdc-1.mongo-cdc,mongo-cdc-2.mongo-cdc:27017/?replicaSet=rs0&readPreference=primaryPreferred&connectTimeoutMS=80000&socketTimeoutMS=20000")
-    private val client = KMongo.createClient(connectionString)
-    private val database = client.getDatabase("colorless-days-children")
-    private val imageListsCollection = database.getCollection<ImageList>()
-    private val imagesCollection = database.getCollection<Image>()
+    private val client by lazy { KMongo.createClient(connectionString) }
+    private val database by lazy { client.getDatabase("colorless-days-children") }
+    private val imageListsCollection by lazy { database.getCollection<ImageList>() }
+    private val imagesCollection by lazy { database.getCollection<Image>() }
 
     fun insertImageList(list: ImageList) {
         logger.info("Inserting ImageList ${list.name}")
@@ -28,12 +27,21 @@ class Repository() {
         imagesCollection.insertMany(images)
         logger.info("Images are inserted")
     }
+
+    fun findImageLists(): List<ImageList> {
+        logger.info("Finding all images lists")
+        return imageListsCollection.find().filterNotNull()
+    }
+
+    fun findImages(imageIds: List<String>): List<Image> {
+        logger.info("Finding images for ids: $imageIds")
+        return imagesCollection.find(Image::imageId `in` imageIds).filterNotNull()
+    }
 }
 
-fun spinUp() {
+fun spinUp(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up images")
     logger.info("Starting spin up")
-    val repository = Repository()
     getFolders().forEach() { folder ->
         val images = folder.images.map { image -> extractImageMetadata("${folder.listId}/Picture${image.imageId}.jpg", image) }
         val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
