@@ -1,6 +1,5 @@
 package info.vlassiev.serg.repository
 
-import com.oracle.util.Checksums.update
 import info.vlassiev.serg.image.extractImageMetadata
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
@@ -21,10 +20,22 @@ class Repository(connectionString: String) {
         logger.info("ImageList ${list.name} is inserted")
     }
 
-    fun insertManyImages(images: List<Image>) {
+    fun deleteImageLists(listIds: List<String>) {
+        logger.info("Deleting ImageLists $listIds")
+        imageListsCollection.deleteMany(ImageList::listId `in` listIds)
+        logger.info("${listIds.size} ImageLists are deleted")
+    }
+
+    fun insertImages(images: List<Image>) {
         logger.info("Inserting ${images.size} images")
         imagesCollection.insertMany(images)
         logger.info("Images are inserted")
+    }
+
+    fun deleteImages(images: List<String>) {
+        logger.info("Deleting ${images.size} images")
+        imagesCollection.deleteMany(Image::imageId `in` images)
+        logger.info("Images are deleted")
     }
 
     fun findImageLists(): List<ImageList> {
@@ -58,7 +69,7 @@ fun spinUp(repository: Repository) {
         val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
         logger.info("Starting spin up for folder ${folder.name}")
         repository.insertImageList(imageList)
-        repository.insertManyImages(images)
+        repository.upsertImages(images)
         logger.info("Spin up for folder ${folder.name} is completed")
     }
 }
@@ -72,5 +83,15 @@ fun spinUpReplaceUrls(repository: Repository) {
         thumbnail = it.thumbnail.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children")
     )}
     repository.upsertImages(updatedImages)
+    logger.info("Spin up if finished")
+}
+
+fun spinUpDeleteWrongData(repository: Repository) {
+    val logger = LoggerFactory.getLogger("Spin Up deleting data")
+    logger.info("Starting spin up")
+    val imageLists = repository.findImageLists().filter { it.name in emptySet<String>() }
+    val imageIds = imageLists.flatMap { it.images }
+    repository.deleteImages(imageIds)
+    repository.deleteImageLists(imageLists.map { it.listId })
     logger.info("Spin up if finished")
 }

@@ -88,7 +88,7 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
 
         return extract(default, tempFile)
     } catch (t: Throwable) {
-        logger.error(t.message, t)
+        logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
         return default.copy(imageId = UUID.randomUUID().toString())
     } finally {
         if (tempFile != null) {
