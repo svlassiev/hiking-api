@@ -20,8 +20,8 @@ fun getImagesForFolder(folder: String, count: Int): List<Image> {
         val imageSuffix = "00${index + 1}".takeLast(3)
         Image(
             imageId = imageSuffix,
-            location = "https://storage.cloud.google.com/colorless-days-children/$folder/Picture$imageSuffix.jpg",
-            thumbnail = "https://storage.cloud.google.com/colorless-days-children/$folder/1_Picture$imageSuffix.jpg",
+            location = "https://storage.googleapis.com/colorless-days-children/$folder/Picture$imageSuffix.jpg",
+            thumbnail = "https://storage.googleapis.com/colorless-days-children/$folder/1_Picture$imageSuffix.jpg",
             description = "$folder ${index + 1}",
             timestamp = now().toEpochMilli()
         )

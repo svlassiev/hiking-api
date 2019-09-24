@@ -1,20 +1,19 @@
 package info.vlassiev.serg.repository
 
+import com.oracle.util.Checksums.update
 import info.vlassiev.serg.image.extractImageMetadata
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.model.getFolders
-import org.litote.kmongo.KMongo
-import org.litote.kmongo.`in`
-import org.litote.kmongo.getCollection
+import org.litote.kmongo.*
 import org.slf4j.LoggerFactory
 
 class Repository(connectionString: String) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val client by lazy { KMongo.createClient(connectionString) }
-    private val database by lazy { client.getDatabase("colorless-days-children") }
-    private val imageListsCollection by lazy { database.getCollection<ImageList>() }
-    private val imagesCollection by lazy { database.getCollection<Image>() }
+    private val client = KMongo.createClient(connectionString)
+    private val database = client.getDatabase("colorless-days-children")
+    private val imageListsCollection = database.getCollection<ImageList>()
+    private val imagesCollection = database.getCollection<Image>()
 
     fun insertImageList(list: ImageList) {
         logger.info("Inserting ImageList ${list.name}")
@@ -37,6 +36,18 @@ class Repository(connectionString: String) {
         logger.info("Finding images for ids: $imageIds")
         return imagesCollection.find(Image::imageId `in` imageIds).filterNotNull()
     }
+
+    fun upsertImages(images: List<Image>) {
+        logger.info("Upsert images with ids: ${images.map { it.imageId }}")
+        imagesCollection.bulkWrite(
+        images.map {image ->
+            replaceOne(
+                Image::imageId eq image.imageId,
+                image,
+                upsert()
+            )
+        })
+    }
 }
 
 fun spinUp(repository: Repository) {
@@ -50,4 +61,16 @@ fun spinUp(repository: Repository) {
         repository.insertManyImages(images)
         logger.info("Spin up for folder ${folder.name} is completed")
     }
+}
+
+fun spinUpReplaceUrls(repository: Repository) {
+    val logger = LoggerFactory.getLogger("Spin Up URLs")
+    logger.info("Starting spin up")
+    val images = repository.findImages(repository.findImageLists().flatMap { it.images })
+    val updatedImages = images.map { it.copy(
+        location = it.location.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children"),
+        thumbnail = it.thumbnail.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children")
+    )}
+    repository.upsertImages(updatedImages)
+    logger.info("Spin up if finished")
 }
