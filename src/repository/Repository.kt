@@ -65,7 +65,7 @@ fun spinUp(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up images")
     logger.info("Starting spin up")
     getFolders().forEach() { folder ->
-        val images = folder.images.map { image -> extractImageMetadata("${folder.listId}/Picture${image.imageId}.jpg", image) }
+        val images = folder.images.map { image -> extractImageMetadata("${folder.listId}/${folder.prefix}${image.imageId}${folder.postfix}", image) }
         val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
         logger.info("Starting spin up for folder ${folder.name}")
         repository.insertImageList(imageList)
@@ -89,7 +89,7 @@ fun spinUpReplaceUrls(repository: Repository) {
 fun spinUpDeleteWrongData(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up deleting data")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { it.name in emptySet<String>() }
+    val imageLists = repository.findImageLists().filter { it.name in setOf("") }
     val imageIds = imageLists.flatMap { it.images }
     repository.deleteImages(imageIds)
     repository.deleteImageLists(imageLists.map { it.listId })
