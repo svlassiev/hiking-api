@@ -12,8 +12,6 @@ data class GpsData(var latitudeRef: String = "", var latitude: String = "", var 
 
 fun getFolders(): List<Folder> {
     return listOf(
-//        Folder("pohod", "Второй майский", 36, "pohod"),
-//        Folder("pohod27-2806", "Поход знакомств", 58, "pohod")
     )
 }
 
