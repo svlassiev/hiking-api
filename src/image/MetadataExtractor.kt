@@ -3,7 +3,9 @@ package info.vlassiev.serg.image
 import com.drew.imaging.ImageMetadataReader
 import com.drew.metadata.Tag
 import com.google.cloud.storage.BlobId
+import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.StorageOptions
+import info.vlassiev.serg.model.Folder
 import info.vlassiev.serg.model.GpsData
 import info.vlassiev.serg.model.Image
 import org.slf4j.LoggerFactory
@@ -11,7 +13,9 @@ import java.io.File
 import java.nio.file.Files
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.time.Instant.now
 import java.util.*
+
 
 private val logger = LoggerFactory.getLogger("MetadataExtractor")
 
@@ -98,5 +102,41 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
                 logger.error("Error deleting temp file: ${t.message}", t)
             }
         }
+    }
+}
+
+fun getGoogleapisFolder(pathInTheBucket: String, name: String): Folder {
+    logger.info("Getting data for $pathInTheBucket")
+    try {
+        val blobs = storage.list(
+            bucketName, BlobListOption.prefix(pathInTheBucket)
+        )
+        val images = blobs.iterateAll().mapNotNull { blob ->
+            var tempFile: File? = null
+
+            try {
+                tempFile = Files.createTempFile("", ".jpg").toFile()
+                tempFile.deleteOnExit()
+                blob.downloadTo(tempFile.toPath())
+                val default = Image(UUID.randomUUID().toString(), blob.mediaLink, blob.mediaLink, "", now().toEpochMilli(), null)
+                logger.info("Extract data for ${blob.mediaLink}")
+                extract(default, tempFile)
+            } catch (t: Throwable) {
+                logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
+                null
+            } finally {
+                if (tempFile != null) {
+                    try {
+                        tempFile.delete()
+                    } catch (t: Throwable) {
+                        logger.error("Error deleting temp file: ${t.message}", t)
+                    }
+                }
+            }
+        }
+        return Folder(UUID.randomUUID().toString(), name, images)
+    } catch (t: Throwable) {
+        logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
+        throw t
     }
 }

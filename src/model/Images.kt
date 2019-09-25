@@ -12,6 +12,7 @@ data class GpsData(var latitudeRef: String = "", var latitude: String = "", var 
 
 fun getFolders(): List<Folder> {
     return listOf(
+        Folder("Progulka", "Поход прогулка", 53, postfix = ".JPG")
     )
 }
 

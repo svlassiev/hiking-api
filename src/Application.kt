@@ -55,5 +55,11 @@ fun Application.module() {
             }
         }
     }
+
+//    Thread {
+//        Thread.sleep(10_000)
+//        spinUpDeleteWrongData(repository)
+//        spinUpGoogleapisFolder(repository)
+//    }.start()
 }
 

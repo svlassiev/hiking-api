@@ -1,6 +1,7 @@
 package info.vlassiev.serg.repository
 
 import info.vlassiev.serg.image.extractImageMetadata
+import info.vlassiev.serg.image.getGoogleapisFolder
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.model.getFolders
@@ -89,9 +90,24 @@ fun spinUpReplaceUrls(repository: Repository) {
 fun spinUpDeleteWrongData(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up deleting data")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { it.name in setOf("") }
+    val imageLists = repository.findImageLists().filter { it.name in setOf("Ловозёры с кипятком и кровью") }
     val imageIds = imageLists.flatMap { it.images }
     repository.deleteImages(imageIds)
     repository.deleteImageLists(imageLists.map { it.listId })
     logger.info("Spin up if finished")
+}
+
+fun spinUpGoogleapisFolder(repository: Repository) {
+    val logger = LoggerFactory.getLogger("Spin Up images for googleapis folders")
+    logger.info("Starting spin up for googleapis folders")
+    val folders = setOf("Lovozero2012" to "Ловозёры с кипятком и кровью")
+    folders.forEach() { (path, name) ->
+        val folder = getGoogleapisFolder(path, name)
+        val images = folder.images
+        val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
+        logger.info("Starting spin up for folder ${folder.name}")
+        repository.insertImageList(imageList)
+        repository.upsertImages(images)
+        logger.info("Spin up for folder ${folder.name} is completed")
+    }
 }
