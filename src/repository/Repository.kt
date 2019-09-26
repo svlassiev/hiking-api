@@ -78,7 +78,8 @@ fun spinUp(repository: Repository) {
 fun spinUpReplaceUrls(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up URLs")
     logger.info("Starting spin up")
-    val images = repository.findImages(repository.findImageLists().flatMap { it.images })
+    val imageLists = repository.findImageLists().filter { it.listId == "75d5deab-a595-41c5-8979-7746504d12bd" }
+    val images = repository.findImages(imageLists.flatMap { it.images })
     val updatedImages = images.map { it.copy(
         location = it.location.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children"),
         thumbnail = it.thumbnail.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children")
@@ -90,7 +91,7 @@ fun spinUpReplaceUrls(repository: Repository) {
 fun spinUpDeleteWrongData(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up deleting data")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { it.name in setOf("Ловозёры с кипятком и кровью") }
+    val imageLists = repository.findImageLists().filter { it.name in setOf("") }
     val imageIds = imageLists.flatMap { it.images }
     repository.deleteImages(imageIds)
     repository.deleteImageLists(imageLists.map { it.listId })
@@ -100,7 +101,7 @@ fun spinUpDeleteWrongData(repository: Repository) {
 fun spinUpGoogleapisFolder(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up images for googleapis folders")
     logger.info("Starting spin up for googleapis folders")
-    val folders = setOf("Lovozero2012" to "Ловозёры с кипятком и кровью")
+    val folders = setOf("" to "")
     folders.forEach() { (path, name) ->
         val folder = getGoogleapisFolder(path, name)
         val images = folder.images
