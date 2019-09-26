@@ -6,12 +6,15 @@ import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.StorageOptions
 import info.vlassiev.serg.model.GpsData
 import info.vlassiev.serg.model.Image
+import org.imgscalr.Scalr
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.imageio.ImageIO
 
 private val logger = LoggerFactory.getLogger("MetadataExtractor")
 
@@ -99,4 +102,37 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
             }
         }
     }
+}
+
+private fun resize(dir: Path, imageFile: File, size: Int) {
+    logger.info("Resizing file $imageFile")
+    var outputFile: File? = null
+    try {
+        outputFile = Files.createFile(dir.resolve("${imageFile.nameWithoutExtension}_${if (size < 100) "thumbnail" else "$size"}.jpg")).toFile()
+        val image = ImageIO.read(imageFile)
+        val scaledImage = Scalr.resize(image, if (size < 100) Scalr.Method.SPEED else Scalr.Method.ULTRA_QUALITY, size)
+        ImageIO.write(scaledImage, "JPEG", outputFile)
+        logger.info("Scaled image is saved to $outputFile")
+    } catch (t: Throwable) {
+        logger.error("Unable to resize image $imageFile", t)
+        if (outputFile != null) {
+            try {
+                outputFile.delete()
+            } catch (t: Throwable) {
+                logger.error("Error deleting failed file: ${t.message}", t)
+            }
+        }
+    }
+}
+
+fun spinUpResize() {
+    logger.info("Spin up images resize")
+    val fileNames = setOf("""""")
+    val outputDirectory = Files.createDirectories(File("""""").toPath())
+    fileNames.forEach { name ->
+        resize(outputDirectory, File(name), 80)
+        resize(outputDirectory, File(name), 800)
+        resize(outputDirectory, File(name), 1024)
+    }
+    logger.info("Spin up is over")
 }
