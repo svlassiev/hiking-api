@@ -78,14 +78,14 @@ fun spinUp(repository: Repository) {
 fun spinUpReplaceUrls(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up URLs")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { it.listId == "" }
+    val imageLists = repository.findImageLists().filter { setOf( "", "", "", "").contains(it.listId) }
     val images = repository.findImages(imageLists.flatMap { it.images })
     val updatedImages = images.map { it.copy(
         location = it.location.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children"),
         thumbnail = it.thumbnail.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children")
     )}
     repository.upsertImages(updatedImages)
-    logger.info("Spin up if finished")
+    logger.info("Spin up is finished")
 }
 
 fun spinUpDeleteWrongData(repository: Repository) {
