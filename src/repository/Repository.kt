@@ -91,7 +91,7 @@ fun spinUpReplaceUrls(repository: Repository) {
 fun spinUpDeleteWrongData(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up deleting data")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { it.name in setOf("") }
+    val imageLists = repository.findImageLists().filter { setOf( "", "", "", "").contains(it.listId) }
     val imageIds = imageLists.flatMap { it.images }
     repository.deleteImages(imageIds)
     repository.deleteImageLists(imageLists.map { it.listId })
@@ -101,7 +101,7 @@ fun spinUpDeleteWrongData(repository: Repository) {
 fun spinUpGoogleapisFolder(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up images for googleapis folders")
     logger.info("Starting spin up for googleapis folders")
-    val folders = setOf("" to "")
+    val folders = setOf("source" to "name")
     folders.forEach() { (path, name) ->
         val folder = getGoogleapisFolder(path, name)
         val images = folder.images
