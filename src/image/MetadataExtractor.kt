@@ -33,6 +33,7 @@ private fun extract(image: Image, file: File): Image {
                     "Exif SubIFD" -> imageMetadata = getImageExifData(directory.tags)
                     "GPS" -> imageMetadata.gps = getImageGpsData(directory.tags)
                 }
+                setPresetImageGps(imageMetadata)
             }
         return Image(
             imageId = UUID.randomUUID().toString(),
@@ -64,8 +65,11 @@ private fun getImageExifData(tags: Collection<Tag>): ImageMetadata {
     return  metadata
 }
 
-private fun getImageGpsPreset(): GpsData {
-    return GpsData("E", "34.6675113", "N", "67.8458", "Terrain", "0") // Ловозеро
+private fun setPresetImageGps(imageMetadata: ImageMetadata) {
+    if (imageMetadata.gps == null) {
+//        GpsData("E", "34.6675113", "N", "67.8458", "Terrain", "0") // Ловозеро
+//        imageMetadata.gps = GpsData("E", "81.2944348", "N", "31.0674983", "Terrain", "0") // Kailash
+    }
 }
 
 private fun printMetadata(directory: Directory) {
@@ -120,7 +124,7 @@ fun getGoogleapisFolder(pathInTheBucket: String, name: String): Folder {
     logger.info("Getting data for $pathInTheBucket")
     try {
         val blobs = storage.list(bucketName, Storage.BlobListOption.prefix(pathInTheBucket))
-        val images = blobs.iterateAll().mapNotNull { blob ->
+        val images = blobs.iterateAll().filter { it.name.endsWith(suffix = "jpg", ignoreCase = true) }.mapNotNull { blob ->
             var tempFile: File? = null
 
             try {
@@ -132,9 +136,10 @@ fun getGoogleapisFolder(pathInTheBucket: String, name: String): Folder {
                 val default = Image(UUID.randomUUID().toString(), source, thumbnail, "", now().toEpochMilli(), null)
                 logger.info("Extract data for ${blob.mediaLink}")
                 val originalName = blob.name.dropLast(4).substringAfterLast("/")
-                resize(File("""C:\temp\images""").toPath(), tempFile, 1024, originalName)
-                resize(File("""C:\temp\images""").toPath(), tempFile, 800, originalName)
-                resize(File("""C:\temp\images""").toPath(), tempFile, 80, originalName)
+                val localFolder = """"""
+                resize(File(localFolder).toPath(), tempFile, 1024, originalName)
+                resize(File(localFolder).toPath(), tempFile, 800, originalName)
+                resize(File(localFolder).toPath(), tempFile, 80, originalName)
                 extract(default, tempFile)
             } catch (t: Throwable) {
                 logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
