@@ -1,13 +1,9 @@
 # hiking-api
 
 ## Updating
-Update version in `gradle.build` and then
-```shell script
-$ ./gradlew clean build
-$ docker build -t svlassiev/hiking-api:<version> .
-$ docker push svlassiev/hiking-api:<version>
-```
-Change version in `hiking-api.yml` at `svlassiev/hiking-api:<version>` string
+Update version in `gradle.build` and `hiking-api.yml` at `svlassiev/hiking-api:<version>` string. Then create tag and push. Dockerhub will be triggered by tag commit and build new docker image.
+
+Just apply new changes.
 ```shell script
 $ kubectl apply -f k8s/hiking-api.yml
 ```

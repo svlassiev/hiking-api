@@ -1,4 +1,11 @@
-FROM openjdk:8-jre-alpine
+# build stage
+FROM gradle:4.2.1-jdk8 as build-stage
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle clean build
+
+# production stage
+FROM openjdk:8-jre-alpine as production-stage
 
 ENV APPLICATION_USER ktor
 RUN adduser -D -g '' $APPLICATION_USER
@@ -6,7 +13,7 @@ RUN adduser -D -g '' $APPLICATION_USER
 RUN mkdir /app
 RUN chown -R $APPLICATION_USER /app
 
-COPY ./build/libs/hiking-api.jar /app/hiking-api.jar
+COPY --from=build-stage /home/gradle/src/build/libs/hiking-api.jar /app/hiking-api.jar
 RUN chmod +x /app/hiking-api.jar
 
 USER $APPLICATION_USER
