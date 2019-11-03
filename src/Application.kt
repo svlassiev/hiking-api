@@ -53,6 +53,12 @@ fun Application.module() {
                 val imageIds = call.receiveOrNull<List<String>>() ?: emptyList()
                 call.respond(imageClient.findImages(imageIds))
             }
+
+            route("/edit") {
+                get("/data") {
+                    call.respond(imageClient.getEditPageData())
+                }
+            }
         }
     }
 

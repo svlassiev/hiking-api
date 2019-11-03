@@ -16,4 +16,10 @@ class ImageClient(private val repository: Repository) {
         return repository.findImages(imageIds).sortedBy { it.timestamp }
     }
 
+    fun getEditPageData(): EditPageData {
+        return EditPageData(getAllImageLists())
+    }
+
+    data class EditPageData(val imageLists: List<ImageList>)
+
 }
