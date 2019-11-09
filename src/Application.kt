@@ -17,12 +17,10 @@ import io.ktor.gson.gson
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.request.receive
 import io.ktor.request.receiveOrNull
 import io.ktor.response.respond
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.routing.route
-import io.ktor.routing.routing
+import io.ktor.routing.*
 import org.slf4j.event.Level
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -36,6 +34,7 @@ fun Application.module() {
 
     install(CORS) {
         method(HttpMethod.Options)
+        method(HttpMethod.Put)
         header(HttpHeaders.ContentType)
         anyHost()
     }
@@ -75,6 +74,16 @@ fun Application.module() {
                         call.respond(HttpStatusCode.Forbidden)
                     } else {
                         call.respond(imageClient.getEditPageData())
+                    }
+                }
+                put("/updateListName") {
+                    val idToken = call.parameters["idToken"] ?: ""
+                    if (!validToken(idToken, adminEmail)) {
+                        call.respond(HttpStatusCode.Forbidden)
+                    } else {
+                        val request = call.receive<ImageClient.UpdateListNameRequest>()
+                        imageClient.updateImagesListName(request)
+                        call.respond(HttpStatusCode.OK)
                     }
                 }
             }

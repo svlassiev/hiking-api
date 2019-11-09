@@ -51,10 +51,18 @@ class Repository(connectionString: String) {
         imagesCollection.bulkWrite(
         images.map {image ->
             replaceOne(
-                Image::imageId eq image.imageId,
-                image,
-                upsert()
+                filter = Image::imageId eq image.imageId,
+                replacement = image,
+                options = upsert()
             )
         })
+    }
+
+    fun updateImagesListName(listId: String, newName: String) {
+        logger.info("Updating images list $listId name $newName")
+        imageListsCollection.updateMany(
+            ImageList::listId eq listId,
+            setValue(ImageList::name, newName)
+        )
     }
 }

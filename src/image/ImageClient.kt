@@ -22,4 +22,10 @@ class ImageClient(private val repository: Repository) {
 
     data class EditPageData(val imageLists: List<ImageList>)
 
+    fun updateImagesListName(request: UpdateListNameRequest) {
+        repository.updateImagesListName(request.listId, request.listName)
+    }
+
+    data class UpdateListNameRequest(val listId: String, val listName: String)
+
 }
