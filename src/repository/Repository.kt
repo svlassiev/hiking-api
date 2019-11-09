@@ -65,4 +65,12 @@ class Repository(connectionString: String) {
             setValue(ImageList::name, newName)
         )
     }
+
+    fun updateImageDescription(imageId: String, description: String) {
+        logger.info("Updating image $imageId description $description")
+        imagesCollection.updateMany(
+            Image::imageId eq imageId,
+            setValue(Image::description, description)
+        )
+    }
 }

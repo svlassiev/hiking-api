@@ -6,6 +6,8 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.typesafe.config.ConfigFactory
 import info.vlassiev.serg.image.ImageClient
+import info.vlassiev.serg.image.ImageClient.UpdateImageDescriptionRequest
+import info.vlassiev.serg.image.ImageClient.UpdateListNameRequest
 import info.vlassiev.serg.repository.Repository
 import io.ktor.application.Application
 import io.ktor.application.call
@@ -21,6 +23,7 @@ import io.ktor.request.receive
 import io.ktor.request.receiveOrNull
 import io.ktor.response.respond
 import io.ktor.routing.*
+import io.ktor.util.getOrFail
 import org.slf4j.event.Level
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -69,21 +72,37 @@ fun Application.module() {
 
             route("/edit") {
                 get("/data") {
-                    val idToken = call.parameters["idToken"] ?: ""
+                    val idToken = call.parameters.getOrFail("idToken")
                     if (!validToken(idToken, adminEmail)) {
                         call.respond(HttpStatusCode.Forbidden)
                     } else {
                         call.respond(imageClient.getEditPageData())
                     }
                 }
-                put("/updateListName") {
-                    val idToken = call.parameters["idToken"] ?: ""
-                    if (!validToken(idToken, adminEmail)) {
-                        call.respond(HttpStatusCode.Forbidden)
-                    } else {
-                        val request = call.receive<ImageClient.UpdateListNameRequest>()
-                        imageClient.updateImagesListName(request)
-                        call.respond(HttpStatusCode.OK)
+                route("/image-lists/{listId}") {
+                    put("/name") {
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val listId = call.parameters.getOrFail("listId")
+                            val request = call.receive<UpdateListNameRequest>()
+                            imageClient.updateImagesListName(listId, request)
+                            call.respond(HttpStatusCode.OK)
+                        }
+                    }
+                }
+                route("/images/{imageId}") {
+                    put("/description") {
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val imageId = call.parameters.getOrFail("imageId")
+                            val request = call.receive<UpdateImageDescriptionRequest>()
+                            imageClient.updateImageDescription(imageId, request)
+                            call.respond(HttpStatusCode.OK)
+                        }
                     }
                 }
             }

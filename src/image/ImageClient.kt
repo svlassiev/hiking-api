@@ -22,10 +22,16 @@ class ImageClient(private val repository: Repository) {
 
     data class EditPageData(val imageLists: List<ImageList>)
 
-    fun updateImagesListName(request: UpdateListNameRequest) {
-        repository.updateImagesListName(request.listId, request.listName)
+    fun updateImagesListName(listId: String, request: UpdateListNameRequest) {
+        repository.updateImagesListName(listId, request.listName)
     }
 
-    data class UpdateListNameRequest(val listId: String, val listName: String)
+    data class UpdateListNameRequest(val listName: String)
+
+    fun updateImageDescription(imageId: String, request: UpdateImageDescriptionRequest) {
+        repository.updateImageDescription(imageId, request.description)
+    }
+
+    data class UpdateImageDescriptionRequest(val description: String)
 
 }
