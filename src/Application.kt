@@ -79,7 +79,7 @@ fun Application.module() {
                         call.respond(imageClient.getEditPageData())
                     }
                 }
-                route("/image-lists/{listId}") {
+                route("/images-lists/{listId}") {
                     put("/name") {
                         val idToken = call.parameters.getOrFail("idToken")
                         if (!validToken(idToken, adminEmail)) {
