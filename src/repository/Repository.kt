@@ -12,13 +12,13 @@ class Repository(connectionString: String) {
     private val imageListsCollection = database.getCollection<ImageList>()
     private val imagesCollection = database.getCollection<Image>()
 
-    fun insertImageList(list: ImageList) {
+    fun insertImagesList(list: ImageList) {
         logger.info("Inserting ImageList ${list.name}")
         imageListsCollection.insertOne(list)
         logger.info("ImageList ${list.name} is inserted")
     }
 
-    fun deleteImageLists(listIds: List<String>) {
+    fun deleteImagesLists(listIds: List<String>) {
         logger.info("Deleting ImageLists $listIds")
         imageListsCollection.deleteMany(ImageList::listId `in` listIds)
         logger.info("${listIds.size} ImageLists are deleted")
@@ -36,7 +36,7 @@ class Repository(connectionString: String) {
         logger.info("Images are deleted")
     }
 
-    fun findImageLists(): List<ImageList> {
+    fun findImagesLists(): List<ImageList> {
         logger.info("Finding all images lists")
         return imageListsCollection.find().filterNotNull()
     }

@@ -6,8 +6,9 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.typesafe.config.ConfigFactory
 import info.vlassiev.serg.image.ImageClient
-import info.vlassiev.serg.image.ImageClient.UpdateImageDescriptionRequest
-import info.vlassiev.serg.image.ImageClient.UpdateListNameRequest
+import info.vlassiev.serg.image.ImageClient.*
+import info.vlassiev.serg.image.createSignedUrl
+import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.repository.Repository
 import io.ktor.application.Application
 import io.ktor.application.call
@@ -25,6 +26,7 @@ import io.ktor.response.respond
 import io.ktor.routing.*
 import io.ktor.util.getOrFail
 import org.slf4j.event.Level
+import java.util.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -38,6 +40,7 @@ fun Application.module() {
     install(CORS) {
         method(HttpMethod.Options)
         method(HttpMethod.Put)
+        method(HttpMethod.Delete)
         header(HttpHeaders.ContentType)
         anyHost()
     }
@@ -63,7 +66,7 @@ fun Application.module() {
         }
         route("/hiking-api") {
             get("/folders") {
-                call.respond(imageClient.getAllImageLists())
+                call.respond(imageClient.getAllNonEmptyImagesLists())
             }
             post("/images") {
                 val imageIds = call.receiveOrNull<List<String>>() ?: emptyList()
@@ -79,6 +82,18 @@ fun Application.module() {
                         call.respond(imageClient.getEditPageData())
                     }
                 }
+                route("/images-lists") {
+                    post() {
+                        val imageList = call.receive<ImageList>()
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val imageList = call.receive<ImageList>()
+                            call.respond(imageClient.addImagesList(imageList))
+                        }
+                    }
+                }
                 route("/images-lists/{listId}") {
                     put("/name") {
                         val idToken = call.parameters.getOrFail("idToken")
@@ -91,17 +106,46 @@ fun Application.module() {
                             call.respond(HttpStatusCode.OK)
                         }
                     }
-                }
-                route("/images/{imageId}") {
-                    put("/description") {
+                    delete() {
                         val idToken = call.parameters.getOrFail("idToken")
                         if (!validToken(idToken, adminEmail)) {
                             call.respond(HttpStatusCode.Forbidden)
                         } else {
-                            val imageId = call.parameters.getOrFail("imageId")
-                            val request = call.receive<UpdateImageDescriptionRequest>()
-                            imageClient.updateImageDescription(imageId, request)
-                            call.respond(HttpStatusCode.OK)
+                            val listId = call.parameters.getOrFail("listId")
+                            call.respond(imageClient.deleteImagesList(listId))
+                        }
+                    }
+                }
+                route("/images") {
+                    post() {
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val request = call.receive<AddImageRequest>()
+                            call.respond(imageClient.addImageFromGoogleStorage(request))
+                        }
+                    }
+                    post("/signed-url") {
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val listId = call.receive<String>()
+                            call.respond(createSignedUrl(listId, UUID.randomUUID().toString()))
+                        }
+                    }
+                    route("/{imageId}") {
+                        put("/description") {
+                            val idToken = call.parameters.getOrFail("idToken")
+                            if (!validToken(idToken, adminEmail)) {
+                                call.respond(HttpStatusCode.Forbidden)
+                            } else {
+                                val imageId = call.parameters.getOrFail("imageId")
+                                val request = call.receive<UpdateImageDescriptionRequest>()
+                                imageClient.updateImageDescription(imageId, request)
+                                call.respond(HttpStatusCode.OK)
+                            }
                         }
                     }
                 }
@@ -112,6 +156,7 @@ fun Application.module() {
 //        Thread.sleep(10_000)
 //        spinUpDeleteWrongData(repository)
 //        spinUpGoogleapisFolder(repository)
+//        createSignedUrl("signedUrls", "${UUID.randomUUID()}.jpg")
 //    }.start()
 }
 

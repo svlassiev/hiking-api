@@ -6,10 +6,18 @@ import info.vlassiev.serg.repository.Repository
 
 class ImageClient(private val repository: Repository) {
 
-    fun getAllImageLists(): List<ImageList> {
-        val firstImageIdToList = repository.findImageLists().filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
+    fun getAllNonEmptyImagesLists(): List<ImageList> {
+        val firstImageIdToList = repository.findImagesLists().filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
         val firstImageFromList = findImages(firstImageIdToList.keys.toList())
         return firstImageFromList.sortedByDescending { image -> image.timestamp }.mapNotNull { firstImage -> firstImageIdToList[firstImage.imageId] }
+    }
+
+    fun getAllImagesLists(): List<ImageList> {
+        val imagesLists= repository.findImagesLists()
+        val firstImageIdToList = imagesLists.filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
+        val firstImageFromList = findImages(firstImageIdToList.keys.toList())
+        val sortedListsWithImages = firstImageFromList.sortedByDescending { image -> image.timestamp }.mapNotNull { firstImage -> firstImageIdToList[firstImage.imageId] }
+        return imagesLists.filter { it.images.isEmpty() } + sortedListsWithImages
     }
 
     fun findImages(imageIds: List<String>): List<Image> {
@@ -17,10 +25,10 @@ class ImageClient(private val repository: Repository) {
     }
 
     fun getEditPageData(): EditPageData {
-        return EditPageData(getAllImageLists())
+        return EditPageData(getAllImagesLists())
     }
 
-    data class EditPageData(val imageLists: List<ImageList>)
+    data class EditPageData(val imagesLists: List<ImageList>)
 
     fun updateImagesListName(listId: String, request: UpdateListNameRequest) {
         repository.updateImagesListName(listId, request.listName)
@@ -33,5 +41,18 @@ class ImageClient(private val repository: Repository) {
     }
 
     data class UpdateImageDescriptionRequest(val description: String)
+
+    fun addImagesList(imagesList: ImageList) {
+        repository.insertImagesList(imagesList)
+    }
+
+    fun deleteImagesList(listId: String) {
+        repository.deleteImagesLists(listOf(listId))
+    }
+
+    fun addImageFromGoogleStorage(request: AddImageRequest) {
+    }
+
+    data class AddImageRequest(val listId: String, val location: String)
 
 }

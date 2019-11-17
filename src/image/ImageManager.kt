@@ -1,8 +1,7 @@
 package info.vlassiev.serg.image
 
 import com.drew.metadata.Directory
-import com.google.cloud.storage.Storage
-import com.google.cloud.storage.StorageOptions
+import com.google.cloud.storage.*
 import info.vlassiev.serg.model.Folder
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
@@ -11,11 +10,13 @@ import info.vlassiev.serg.repository.Repository
 import org.imgscalr.Scalr
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.net.URL
 import java.nio.file.Files
-import javax.imageio.ImageIO
 import java.nio.file.Path
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.TimeUnit
+import javax.imageio.ImageIO
 
 const val bucketName = "colorless-days-children"
 val storage: Storage = StorageOptions.getDefaultInstance().service
@@ -97,7 +98,7 @@ fun spinUpFolder(repository: Repository) {
         val images = folder.images.map { image -> extractImageMetadata("${folder.listId}/${folder.prefix}${image.imageId}${folder.postfix}", image) }
         val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
         logger.info("Starting spin up for folder ${folder.name}")
-        repository.insertImageList(imageList)
+        repository.insertImagesList(imageList)
         repository.upsertImages(images)
         logger.info("Spin up for folder ${folder.name} is completed")
     }
@@ -106,7 +107,7 @@ fun spinUpFolder(repository: Repository) {
 fun spinUpReplaceUrls(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up URLs")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { setOf( "", "", "", "").contains(it.listId) }
+    val imageLists = repository.findImagesLists().filter { setOf( "", "", "", "").contains(it.listId) }
     val images = repository.findImages(imageLists.flatMap { it.images })
     val updatedImages = images.map { it.copy(
         location = it.location.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children"),
@@ -119,10 +120,10 @@ fun spinUpReplaceUrls(repository: Repository) {
 fun spinUpDeleteWrongData(repository: Repository) {
     val logger = LoggerFactory.getLogger("Spin Up deleting data")
     logger.info("Starting spin up")
-    val imageLists = repository.findImageLists().filter { setOf( "", "", "", "").contains(it.listId) }
+    val imageLists = repository.findImagesLists().filter { setOf( "", "", "", "").contains(it.listId) }
     val imageIds = imageLists.flatMap { it.images }
     repository.deleteImages(imageIds)
-    repository.deleteImageLists(imageLists.map { it.listId })
+    repository.deleteImagesLists(imageLists.map { it.listId })
     logger.info("Spin up if finished")
 }
 
@@ -135,8 +136,26 @@ fun spinUpGoogleapisFolder(repository: Repository) {
         val images = folder.images
         val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
         logger.info("Starting spin up for folder ${folder.name}")
-        repository.insertImageList(imageList)
+        repository.insertImagesList(imageList)
         repository.upsertImages(images)
         logger.info("Spin up for folder ${folder.name} is completed")
     }
+}
+
+fun createSignedUrl(imagesListId: String, imageName: String): URL {
+    val objectName = "$imagesListId/$imageName"
+
+    val blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, objectName)).build()
+
+    val extensionHeaders = mapOf("Content-Type" to "image/jpeg")
+    val signedUrl = storage.signUrl(
+        blobInfo,
+        15,
+        TimeUnit.MINUTES,
+        Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
+        Storage.SignUrlOption.withExtHeaders(extensionHeaders),
+        Storage.SignUrlOption.withV4Signature())
+
+    logger.info("Signed URL is generated: $signedUrl")
+    return signedUrl
 }

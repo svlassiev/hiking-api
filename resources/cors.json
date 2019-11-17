@@ -1,0 +1,13 @@
+[
+  {
+    "origin": ["*"],
+    "responseHeader": [
+      "Access-Control-Allow-Origin",
+      "Content-Type",
+      "content-type",
+      "x-goog-resumable"
+    ],
+    "method": ["OPTIONS", "POST","PUT"],
+    "maxAgeSeconds": 3600
+  }
+]
