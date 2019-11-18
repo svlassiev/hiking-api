@@ -2,12 +2,9 @@
   {
     "origin": ["*"],
     "responseHeader": [
-      "Access-Control-Allow-Origin",
-      "Content-Type",
-      "content-type",
-      "x-goog-resumable"
+      "content-type"
     ],
-    "method": ["OPTIONS", "POST","PUT"],
+    "method": ["OPTIONS", "PUT"],
     "maxAgeSeconds": 3600
   }
 ]
