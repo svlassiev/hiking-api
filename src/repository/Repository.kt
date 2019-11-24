@@ -42,6 +42,12 @@ class Repository(connectionString: String) {
         logger.info("Images are deleted")
     }
 
+    fun deleteImageFromLists(image: String) {
+        logger.info("Deleting image from lists $image")
+        // TODO
+        logger.info("Images are deleted")
+    }
+
     fun findImagesList(imagesListId: String): ImageList {
         logger.info("Finding images list $imagesListId")
         return imageListsCollection.findOne(ImageList::listId eq imagesListId) ?: throw NoSuchElementException("No $imagesListId in Images Lists")

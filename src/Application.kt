@@ -84,7 +84,6 @@ fun Application.module() {
                 }
                 route("/images-lists") {
                     post() {
-                        val imageList = call.receive<ImageList>()
                         val idToken = call.parameters.getOrFail("idToken")
                         if (!validToken(idToken, adminEmail)) {
                             call.respond(HttpStatusCode.Forbidden)
@@ -124,6 +123,15 @@ fun Application.module() {
                         } else {
                             val request = call.receive<AddImageRequest>()
                             call.respond(imageClient.addImageFromGoogleStorage(request))
+                        }
+                    }
+                    delete() {
+                        val idToken = call.parameters.getOrFail("idToken")
+                        if (!validToken(idToken, adminEmail)) {
+                            call.respond(HttpStatusCode.Forbidden)
+                        } else {
+                            val imageId = call.parameters.getOrFail("imageId")
+                            call.respond(imageClient.deleteImage(imageId))
                         }
                     }
                     post("/signed-url") {
