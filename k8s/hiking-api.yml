@@ -50,6 +50,8 @@ spec:
                 secretKeyRef:
                   name: firebase
                   key: databaseUrl
+            - name: PORT
+              value: "9090"
           ports:
             - name: http
               containerPort: 9090
