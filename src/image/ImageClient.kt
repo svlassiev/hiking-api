@@ -50,7 +50,13 @@ class ImageClient(private val repository: Repository) {
         repository.deleteImagesLists(listOf(listId))
     }
 
-    fun addImageFromGoogleStorage(request: AddImageRequest) {
+    fun addImageFromGoogleStorage(request: AddImageRequest): Image {
+        val image = generateGoogleapisImage(request.location)
+        repository.insertImage(image)
+        val list = repository.findImagesList(request.listId)
+        val updatedList = list.copy(images = list.images + image.imageId)
+        repository.replaceImagesList(updatedList)
+        return image
     }
 
     data class AddImageRequest(val listId: String, val location: String)

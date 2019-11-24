@@ -24,6 +24,12 @@ class Repository(connectionString: String) {
         logger.info("${listIds.size} ImageLists are deleted")
     }
 
+    fun insertImage(image: Image) {
+        logger.info("Inserting image $image")
+        imagesCollection.insertOne(image)
+        logger.info("Image is inserted")
+    }
+
     fun insertImages(images: List<Image>) {
         logger.info("Inserting ${images.size} images")
         imagesCollection.insertMany(images)
@@ -34,6 +40,11 @@ class Repository(connectionString: String) {
         logger.info("Deleting ${images.size} images")
         imagesCollection.deleteMany(Image::imageId `in` images)
         logger.info("Images are deleted")
+    }
+
+    fun findImagesList(imagesListId: String): ImageList {
+        logger.info("Finding images list $imagesListId")
+        return imageListsCollection.findOne(ImageList::listId eq imagesListId) ?: throw NoSuchElementException("No $imagesListId in Images Lists")
     }
 
     fun findImagesLists(): List<ImageList> {
@@ -56,6 +67,11 @@ class Repository(connectionString: String) {
                 options = upsert()
             )
         })
+    }
+
+    fun replaceImagesList(list: ImageList) {
+        logger.info("Updating images list ${list.listId}")
+        imageListsCollection.replaceOne(ImageList::listId eq list.listId, list)
     }
 
     fun updateImagesListName(listId: String, newName: String) {

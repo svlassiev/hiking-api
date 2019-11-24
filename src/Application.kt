@@ -132,7 +132,9 @@ fun Application.module() {
                             call.respond(HttpStatusCode.Forbidden)
                         } else {
                             val listId = call.receive<String>()
-                            call.respond(createSignedUrl(listId, UUID.randomUUID().toString()))
+                            val imageName = UUID.randomUUID().toString() + ".jpg"
+
+                            call.respond(createSignedUrl(listId, imageName))
                         }
                     }
                     route("/{imageId}") {
@@ -152,12 +154,6 @@ fun Application.module() {
             }
         }
     }
-//    Thread {
-//        Thread.sleep(10_000)
-//        spinUpDeleteWrongData(repository)
-//        spinUpGoogleapisFolder(repository)
-//        createSignedUrl("signedUrls", "${UUID.randomUUID()}.jpg")
-//    }.start()
 }
 
 private fun validToken(idToken: String, adminEmail: String): Boolean {

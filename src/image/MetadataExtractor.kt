@@ -39,7 +39,7 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
         val blob = storage.get(BlobId.of(bucketName, pathInTheBucket))
         blob.downloadTo(tempFile.toPath())
 
-        return extract(default, tempFile)
+        return extractImageData(default, tempFile)
     } catch (t: Throwable) {
         logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
         return default.copy(imageId = UUID.randomUUID().toString())
@@ -54,7 +54,7 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
     }
 }
 
-fun extract(image: Image, file: File): Image {
+fun extractImageData(image: Image, file: File): Image {
     try {
         val metadata = ImageMetadataReader.readMetadata(file)
 

@@ -2,17 +2,13 @@ package info.vlassiev.serg.image
 
 import com.drew.metadata.Directory
 import com.google.cloud.storage.*
-import info.vlassiev.serg.model.Folder
 import info.vlassiev.serg.model.Image
-import info.vlassiev.serg.model.ImageList
-import info.vlassiev.serg.model.getFolders
-import info.vlassiev.serg.repository.Repository
 import org.imgscalr.Scalr
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.FileInputStream
 import java.net.URL
 import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -23,16 +19,17 @@ val storage: Storage = StorageOptions.getDefaultInstance().service
 
 private val logger = LoggerFactory.getLogger("ImageManager")
 
-fun resize(dir: Path, imageFile: File, size: Int, originalName: String = imageFile.nameWithoutExtension) {
+fun resize(imageFile: File, size: Int, originalName: String = imageFile.nameWithoutExtension): File? {
     logger.info("Resizing file $imageFile")
-    Files.createDirectories(dir)
     var outputFile: File? = null
     try {
-        outputFile = Files.createFile(dir.resolve("${originalName}_${if (size < 100) "thumbnail" else "$size"}.jpg")).toFile()
+        outputFile = Files.createTempFile("", ".jpg").toFile()
+        outputFile.deleteOnExit()
         val image = ImageIO.read(imageFile)
         val scaledImage = Scalr.resize(image, if (size < 100) Scalr.Method.SPEED else Scalr.Method.ULTRA_QUALITY, size)
         ImageIO.write(scaledImage, "JPEG", outputFile)
         logger.info("Scaled image is saved to $outputFile")
+        return outputFile
     } catch (t: Throwable) {
         logger.error("Unable to resize image $imageFile", t)
         if (outputFile != null) {
@@ -43,106 +40,56 @@ fun resize(dir: Path, imageFile: File, size: Int, originalName: String = imageFi
             }
         }
     }
+    return outputFile
 }
 
 fun printMetadata(directory: Directory) {
     directory.tags.forEach { println("${directory.name}\t${it.tagName}\t${it.description}") }
 }
 
-fun getGoogleapisFolder(pathInTheBucket: String, name: String): Folder {
+fun generateGoogleapisImage(pathInTheBucket: String): Image {
     logger.info("Getting data for $pathInTheBucket")
-    try {
-        val blobs = storage.list(bucketName, Storage.BlobListOption.prefix(pathInTheBucket))
-        val images = blobs.iterateAll().filter { it.name.endsWith(suffix = "jpg", ignoreCase = true) }.mapNotNull { blob ->
-            var tempFile: File? = null
+    val blob = storage.get(BlobId.of(bucketName, pathInTheBucket))
+    return blob.toImage()
+}
 
+private fun Blob.toImage(): Image {
+    var tempFile: File? = null
+
+    return try {
+        tempFile = Files.createTempFile("", ".jpg").toFile()
+        tempFile.deleteOnExit()
+        this.downloadTo(tempFile.toPath())
+        val source = "https://storage.googleapis.com/${this.bucket}/${this.name}"
+        val thumbnailName = "${this.name}".replace(".jpg", "_thumbnail.jpg", true)
+        val thumbnail = "https://storage.googleapis.com/${this.bucket}/$thumbnailName"
+        val draft = Image(UUID.randomUUID().toString(), source, thumbnail, "", Instant.now().toEpochMilli(), null)
+        logger.info("Extract data for ${this.mediaLink}")
+        uploadThumbnail(tempFile, thumbnailName)
+        extractImageData(draft, tempFile)
+    } catch (t: Throwable) {
+        logger.error("Unable to extract data for file $tempFile: ${t.message}", t)
+        throw t
+    } finally {
+        if (tempFile != null) {
             try {
-                tempFile = Files.createTempFile("", ".jpg").toFile()
-                tempFile.deleteOnExit()
-                blob.downloadTo(tempFile.toPath())
-                val source = "https://storage.googleapis.com/${blob.bucket}/${blob.name}".replace(".jpg", ".jpg", true)
-                val thumbnail = "https://storage.googleapis.com/${blob.bucket}/${blob.name}".replace(".jpg", "_thumbnail.jpg", true)
-                val default = Image(UUID.randomUUID().toString(), source, thumbnail, "", Instant.now().toEpochMilli(), null)
-                logger.info("Extract data for ${blob.mediaLink}")
-                val originalName = blob.name.dropLast(4).substringAfterLast("/")
-                val localFolder = File("""""").toPath().resolve(pathInTheBucket)
-                resize(localFolder, tempFile, 1024, originalName)
-                resize(localFolder, tempFile, 800, originalName)
-                resize(localFolder, tempFile, 80, originalName)
-                extract(default, tempFile)
+                tempFile.delete()
             } catch (t: Throwable) {
-                logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
-                null
-            } finally {
-                if (tempFile != null) {
-                    try {
-                        tempFile.delete()
-                    } catch (t: Throwable) {
-                        logger.error("Error deleting temp file: ${t.message}", t)
-                    }
-                }
+                logger.error("Error deleting temp file: ${t.message}", t)
             }
         }
-        return Folder(UUID.randomUUID().toString(), name, images)
-    } catch (t: Throwable) {
-        logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
-        throw t
     }
 }
 
-
-fun spinUpFolder(repository: Repository) {
-    val logger = LoggerFactory.getLogger("Spin Up images")
-    logger.info("Starting spin up")
-    getFolders().forEach { folder ->
-        val images = folder.images.map { image -> extractImageMetadata("${folder.listId}/${folder.prefix}${image.imageId}${folder.postfix}", image) }
-        val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
-        logger.info("Starting spin up for folder ${folder.name}")
-        repository.insertImagesList(imageList)
-        repository.upsertImages(images)
-        logger.info("Spin up for folder ${folder.name} is completed")
-    }
+private fun uploadThumbnail(originalImage: File, uploadPath: String) {
+    val thumbnailFile = resize(originalImage, 80)
+    val content = FileInputStream(thumbnailFile).readBytes()
+    val blobId = BlobId.of(bucketName, uploadPath)
+    val blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpg").build()
+    storage.create(blobInfo, content)
 }
 
-fun spinUpReplaceUrls(repository: Repository) {
-    val logger = LoggerFactory.getLogger("Spin Up URLs")
-    logger.info("Starting spin up")
-    val imageLists = repository.findImagesLists().filter { setOf( "", "", "", "").contains(it.listId) }
-    val images = repository.findImages(imageLists.flatMap { it.images })
-    val updatedImages = images.map { it.copy(
-        location = it.location.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children"),
-        thumbnail = it.thumbnail.replace("https://storage.cloud.google.com/colorless-days-children","https://storage.googleapis.com/colorless-days-children")
-    )}
-    repository.upsertImages(updatedImages)
-    logger.info("Spin up is finished")
-}
-
-fun spinUpDeleteWrongData(repository: Repository) {
-    val logger = LoggerFactory.getLogger("Spin Up deleting data")
-    logger.info("Starting spin up")
-    val imageLists = repository.findImagesLists().filter { setOf( "", "", "", "").contains(it.listId) }
-    val imageIds = imageLists.flatMap { it.images }
-    repository.deleteImages(imageIds)
-    repository.deleteImagesLists(imageLists.map { it.listId })
-    logger.info("Spin up if finished")
-}
-
-fun spinUpGoogleapisFolder(repository: Repository) {
-    val logger = LoggerFactory.getLogger("Spin Up images for googleapis folders")
-    logger.info("Starting spin up for googleapis folders")
-    val folders = setOf("source" to "name")
-    folders.forEach { (path, name) ->
-        val folder = getGoogleapisFolder(path, name)
-        val images = folder.images
-        val imageList = ImageList(name = folder.name, images = images.map { it.imageId })
-        logger.info("Starting spin up for folder ${folder.name}")
-        repository.insertImagesList(imageList)
-        repository.upsertImages(images)
-        logger.info("Spin up for folder ${folder.name} is completed")
-    }
-}
-
-fun createSignedUrl(imagesListId: String, imageName: String): URL {
+fun createSignedUrl(imagesListId: String, imageName: String): SignedUrlResponse {
     val objectName = "$imagesListId/$imageName"
 
     val blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, objectName)).build()
@@ -157,5 +104,7 @@ fun createSignedUrl(imagesListId: String, imageName: String): URL {
         Storage.SignUrlOption.withV4Signature())
 
     logger.info("Signed URL is generated: $signedUrl")
-    return signedUrl
+    return SignedUrlResponse(signedUrl, objectName)
 }
+
+data class SignedUrlResponse(val signedUrl: URL, val location: String)
