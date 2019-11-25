@@ -42,10 +42,12 @@ class Repository(connectionString: String) {
         logger.info("Images are deleted")
     }
 
-    fun deleteImageFromLists(image: String) {
-        logger.info("Deleting image from lists $image")
-        // TODO
-        logger.info("Images are deleted")
+    fun deleteImageFromList(listId: String, imageId: String) {
+        logger.info("Deleting image $imageId from list $listId")
+        val originalList = imageListsCollection.findOne(ImageList::listId eq listId) ?: return
+        val updatedList = originalList.copy(images = originalList.images.filter { it != imageId } )
+        imageListsCollection.updateOne(ImageList::listId eq listId, updatedList)
+        logger.info("Image is deleted")
     }
 
     fun findImagesList(imagesListId: String): ImageList {

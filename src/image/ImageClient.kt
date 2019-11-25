@@ -50,9 +50,9 @@ class ImageClient(private val repository: Repository) {
         repository.deleteImagesLists(listOf(listId))
     }
 
-    fun deleteImage(imageId: String) {
+    fun deleteImage(listId: String, imageId: String) {
+        repository.deleteImageFromList(listId, imageId)
         repository.deleteImages(listOf(imageId))
-        repository.deleteImageFromLists(imageId)
     }
 
     fun addImageFromGoogleStorage(request: AddImageRequest): Image {
