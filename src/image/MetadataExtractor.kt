@@ -17,12 +17,12 @@ private val logger = LoggerFactory.getLogger("MetadataExtractor")
 private fun getImageGpsData(tags: Collection<Tag>): GpsData {
     val gps = GpsData()
     tags.forEach { tag -> when(tag.tagName) {
-        "Latitude Ref" -> gps.latitudeRef = tag.description
-        "Latitude" -> gps.latitude = tag.description
-        "Longitude Ref" -> gps.longitudeRef = tag.description
-        "Longitude" -> gps.longitude = tag.description
-        "Altitude Ref" -> gps.altitudeRef = tag.description
-        "Altitude" -> gps.altitude = tag.description
+        "GPS Latitude Ref" -> gps.latitudeRef = tag.description
+        "GPS Latitude" -> gps.latitude = tag.description
+        "GPS Longitude Ref" -> gps.longitudeRef = tag.description
+        "GPS Longitude" -> gps.longitude = tag.description
+        "GPS Altitude Ref" -> gps.altitudeRef = tag.description
+        "GPS Altitude" -> gps.altitude = tag.description
     } }
     return gps
 }
@@ -42,7 +42,7 @@ fun extractImageMetadata(pathInTheBucket: String, default: Image): Image {
         return extractImageData(default, tempFile)
     } catch (t: Throwable) {
         logger.error("Unable to extract data for $pathInTheBucket: ${t.message}", t)
-        return default.copy(imageId = UUID.randomUUID().toString())
+        return default
     } finally {
         if (tempFile != null) {
             try {
@@ -68,7 +68,7 @@ fun extractImageData(image: Image, file: File): Image {
                 setPresetImageGps(imageMetadata)
             }
         return Image(
-            imageId = UUID.randomUUID().toString(),
+            imageId = image.imageId,
             location = image.location,
             thumbnail = image.thumbnail,
             description = imageMetadata.userComment,
@@ -77,7 +77,7 @@ fun extractImageData(image: Image, file: File): Image {
         )
     } catch (t: Throwable) {
         logger.error(t.message)
-        return image.copy(imageId = UUID.randomUUID().toString())
+        return image
     }
 }
 
