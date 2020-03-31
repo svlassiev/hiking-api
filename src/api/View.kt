@@ -2,7 +2,7 @@ package info.vlassiev.serg.api
 
 import info.vlassiev.serg.image.ImageClient
 import io.ktor.application.call
-import io.ktor.request.receiveOrNull
+import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
 
@@ -12,8 +12,10 @@ fun Routing.viewApi(path: String, imageClient: ImageClient): Route {
             call.respond(imageClient.getAllNonEmptyImagesLists())
         }
         post("/images") {
-            val imageIds = call.receiveOrNull<List<String>>() ?: emptyList()
-            call.respond(imageClient.findImages(imageIds))
+            val request = call.receive<ImagesRequest>()
+            call.respond(imageClient.findImages(request.imageIds))
         }
     }
 }
+
+data class ImagesRequest(val imageIds: List<String>, val skip: Int, val limit: Int)
