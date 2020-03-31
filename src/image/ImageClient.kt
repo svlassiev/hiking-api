@@ -8,20 +8,20 @@ class ImageClient(private val repository: Repository) {
 
     fun getAllNonEmptyImagesLists(): List<ImageList> {
         val firstImageIdToList = repository.findImagesLists().filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
-        val firstImageFromList = findImages(firstImageIdToList.keys.toList())
+        val firstImageFromList = findImages(imageIds = firstImageIdToList.keys.toList(), skip = 0, limit = firstImageIdToList.size)
         return firstImageFromList.sortedByDescending { image -> image.timestamp }.mapNotNull { firstImage -> firstImageIdToList[firstImage.imageId] }
     }
 
     fun getAllImagesLists(): List<ImageList> {
         val imagesLists= repository.findImagesLists()
         val firstImageIdToList = imagesLists.filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
-        val firstImageFromList = findImages(firstImageIdToList.keys.toList())
+        val firstImageFromList = findImages(imageIds = firstImageIdToList.keys.toList(), skip = 0, limit = firstImageIdToList.size)
         val sortedListsWithImages = firstImageFromList.sortedByDescending { image -> image.timestamp }.mapNotNull { firstImage -> firstImageIdToList[firstImage.imageId] }
         return imagesLists.filter { it.images.isEmpty() } + sortedListsWithImages
     }
 
-    fun findImages(imageIds: List<String>): List<Image> {
-        return repository.findImages(imageIds).sortedBy { it.timestamp }
+    fun findImages(imageIds: List<String>, skip: Int, limit: Int): List<Image> {
+        return repository.findImages(imageIds, skip, limit)
     }
 
     fun getEditPageData(): EditPageData {

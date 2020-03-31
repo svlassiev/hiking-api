@@ -60,9 +60,15 @@ class Repository(connectionString: String) {
         return imageListsCollection.find().filterNotNull()
     }
 
-    fun findImages(imageIds: List<String>): List<Image> {
+    fun findImages(imageIds: List<String>, skip: Int, limit: Int): List<Image> {
         logger.info("Finding images for ids: $imageIds")
-        return imagesCollection.find(Image::imageId `in` imageIds).filterNotNull()
+        val pipeline = listOfNotNull(
+            match(Image::imageId `in` imageIds),
+            sort(ascending(Image::timestamp)),
+            if (limit > 0) limit(skip + limit) else null,
+            if (skip > 0) skip(skip) else null
+        )
+        return imagesCollection.aggregate(pipeline).filterNotNull()
     }
 
     fun upsertImages(images: List<Image>) {

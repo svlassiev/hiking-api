@@ -13,7 +13,7 @@ fun Routing.viewApi(path: String, imageClient: ImageClient): Route {
         }
         post("/images") {
             val request = call.receive<ImagesRequest>()
-            call.respond(imageClient.findImages(request.imageIds))
+            call.respond(imageClient.findImages(request.imageIds, request.skip, request.limit))
         }
     }
 }
