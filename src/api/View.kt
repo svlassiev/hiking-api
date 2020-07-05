@@ -15,6 +15,9 @@ fun Routing.viewApi(path: String, imageClient: ImageClient): Route {
             val request = call.receive<ImagesRequest>()
             call.respond(imageClient.findImages(request.imageIds, request.skip, request.limit))
         }
+        get("/timeline/data") {
+            call.respond(imageClient.getTimelineData())
+        }
     }
 }
 

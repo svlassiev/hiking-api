@@ -6,6 +6,14 @@ import info.vlassiev.serg.repository.Repository
 
 class ImageClient(private val repository: Repository) {
 
+    fun getTimelineData(): List<TimelineItem> {
+        return getAllImagesLists().flatMap { list ->
+            listOf(TimelineItem(imageId = null, title = list.name, listId = list.listId)) +
+                    list.images.map { image -> TimelineItem(imageId = image, title = null, listId = list.listId) }
+        }
+    }
+    data class TimelineItem(val imageId: String?, val title: String?, val listId: String)
+
     fun getAllNonEmptyImagesLists(): List<ImageList> {
         val firstImageIdToList = repository.findImagesLists().filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
         val firstImageFromList = findImages(imageIds = firstImageIdToList.keys.toList(), skip = 0, limit = firstImageIdToList.size)
