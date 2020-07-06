@@ -3,16 +3,27 @@ package info.vlassiev.serg.image
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.repository.Repository
+import java.text.SimpleDateFormat
 
 class ImageClient(private val repository: Repository) {
 
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd")
     fun getTimelineData(): List<TimelineItem> {
         return getAllImagesLists().flatMap { list ->
-            listOf(TimelineItem(imageId = null, title = list.name, listId = list.listId)) +
-                    list.images.map { image -> TimelineItem(imageId = image, title = null, listId = list.listId) }
+            val title = TimelineItem(imageId = null, title = list.name, date = null, listId = list.listId)
+            val imageData = findImages(imageIds = list.images, skip = 0, limit = list.images.size).
+                groupBy { image -> dateFormat.format(image.timestamp) }.
+                flatMap { (date, images) ->
+                    listOf(TimelineItem(imageId = null, title = null, date = date, listId = list.listId)) +
+                            images.
+                                sortedBy { it.timestamp }.
+                                map { TimelineItem(imageId = it.imageId, title = null, date = null, listId = list.listId) }
+                }
+
+            listOf(title) + imageData
         }
     }
-    data class TimelineItem(val imageId: String?, val title: String?, val listId: String)
+    data class TimelineItem(val imageId: String?, val title: String?, val date: String?, val listId: String)
 
     fun getAllNonEmptyImagesLists(): List<ImageList> {
         val firstImageIdToList = repository.findImagesLists().filter { it.images.isNotEmpty() }.map { list -> list.images[0] to list }.toMap()
