@@ -33,11 +33,11 @@ spec:
         - name: svlassiev-dockerhub
       containers:
         - name: hiking-api
-          image: svlassiev/hiking-api:20.07.06
+          image: svlassiev/hiking-api:20.07.06.1
           imagePullPolicy: Always
           env:
             - name: MONGO_CONNECTION_STRING
-              value: "mongo-cdc-1.mongo-cdc:27017"
+              value: "mongo-cdc-0.mongo-cdc:27017"
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "/firebase/firebase-service-account.json"
             - name: ADMIN_EMAIL
