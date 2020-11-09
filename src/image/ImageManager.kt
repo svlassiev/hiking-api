@@ -3,6 +3,8 @@ package info.vlassiev.serg.image
 import com.drew.metadata.Directory
 import com.google.cloud.storage.*
 import info.vlassiev.serg.model.Image
+import info.vlassiev.serg.model.ImageVariant
+import info.vlassiev.serg.model.VariantName.*
 import org.imgscalr.Scalr
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -65,7 +67,7 @@ private fun Blob.toImage(): Image {
         val thumbnail = "https://storage.googleapis.com/${this.bucket}/$thumbnailName"
         val draft = Image(UUID.randomUUID().toString(), source, thumbnail, "", Instant.now().toEpochMilli(), null)
         logger.info("Extract data for ${this.mediaLink}")
-        uploadThumbnail(tempFile, thumbnailName)
+        resizeAndUpload(tempFile, thumbnailName)
         extractImageData(draft, tempFile)
     } catch (t: Throwable) {
         logger.error("Unable to extract data for file $tempFile: ${t.message}", t)
@@ -81,8 +83,8 @@ private fun Blob.toImage(): Image {
     }
 }
 
-private fun uploadThumbnail(originalImage: File, uploadPath: String) {
-    val thumbnailFile = resize(originalImage, 80)
+private fun resizeAndUpload(originalImage: File, uploadPath: String, size: Int = 80) {
+    val thumbnailFile = resize(originalImage, size)
     val content = FileInputStream(thumbnailFile).readBytes()
     val blobId = BlobId.of(bucketName, uploadPath)
     val blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpg").build()
