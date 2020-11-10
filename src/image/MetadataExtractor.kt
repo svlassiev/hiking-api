@@ -67,10 +67,7 @@ fun extractImageData(image: Image, file: File): Image {
                 }
                 setPresetImageGps(imageMetadata)
             }
-        return Image(
-            imageId = image.imageId,
-            location = image.location,
-            thumbnail = image.thumbnail,
+        return image.copy(
             description = imageMetadata.userComment,
             timestamp = imageMetadata.originalTime,
             gps = imageMetadata.gps

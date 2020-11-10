@@ -21,8 +21,8 @@ val storage: Storage = StorageOptions.getDefaultInstance().service
 
 private val logger = LoggerFactory.getLogger("ImageManager")
 
-fun resize(imageFile: File, size: Int, originalName: String = imageFile.nameWithoutExtension): File? {
-    logger.info("Resizing file $imageFile")
+fun resize(imageFile: File, size: Int): File? {
+    logger.info("Resizing file $imageFile to ${size}px")
     var outputFile: File? = null
     try {
         outputFile = Files.createTempFile("", ".jpg").toFile()
@@ -62,12 +62,33 @@ private fun Blob.toImage(): Image {
         tempFile = Files.createTempFile("", ".jpg").toFile()
         tempFile.deleteOnExit()
         this.downloadTo(tempFile.toPath())
-        val source = "https://storage.googleapis.com/${this.bucket}/${this.name}"
-        val thumbnailName = "${this.name}".replace(".jpg", "_thumbnail.jpg", true)
-        val thumbnail = "https://storage.googleapis.com/${this.bucket}/$thumbnailName"
-        val draft = Image(UUID.randomUUID().toString(), source, thumbnail, "", Instant.now().toEpochMilli(), null)
+        val variants = listOf(
+            ".jpg" to DEFAULT,
+            "_thumbnail.jpg" to THUMBNAIL,
+            "_2048.jpg" to V2048,
+            "_1024.jpg" to V1024,
+            "_800.jpg" to V800)
+            .map { (suffix, variantName) ->
+                val fileName = "${this.name}".replace(".jpg", suffix, true)
+                val variantLocation = "https://storage.googleapis.com/${this.bucket}/$fileName"
+                when (variantName) {
+                    THUMBNAIL -> resizeAndUpload(tempFile, fileName, 80)
+                    V2048 -> resizeAndUpload(tempFile, fileName, 2048)
+                    V1024 -> resizeAndUpload(tempFile, fileName, 1024)
+                    V800 -> resizeAndUpload(tempFile, fileName, 800)
+                }
+                ImageVariant(variantName, variantLocation)
+            }
+        val draft = Image(
+            imageId = UUID.randomUUID().toString(),
+            location = variants.first { it.name == DEFAULT }.location,
+            thumbnail = variants.first { it.name == THUMBNAIL }.location,
+            description = "",
+            timestamp = Instant.now().toEpochMilli(),
+            variants = variants,
+            gps = null
+        )
         logger.info("Extract data for ${this.mediaLink}")
-        resizeAndUpload(tempFile, thumbnailName)
         extractImageData(draft, tempFile)
     } catch (t: Throwable) {
         logger.error("Unable to extract data for file $tempFile: ${t.message}", t)
@@ -83,11 +104,12 @@ private fun Blob.toImage(): Image {
     }
 }
 
-private fun resizeAndUpload(originalImage: File, uploadPath: String, size: Int = 80) {
-    val thumbnailFile = resize(originalImage, size)
-    val content = FileInputStream(thumbnailFile).readBytes()
+private fun resizeAndUpload(originalImage: File, uploadPath: String, size: Int) {
+    val resizedFile = resize(originalImage, size)
+    val content = FileInputStream(resizedFile).readBytes()
     val blobId = BlobId.of(bucketName, uploadPath)
     val blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpg").build()
+    logger.info("Uploading to $uploadPath")
     storage.create(blobInfo, content)
 }
 
