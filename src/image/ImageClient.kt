@@ -8,20 +8,22 @@ import java.text.SimpleDateFormat
 class ImageClient(private val repository: Repository) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-    fun getTimelineData(): List<TimelineItem> {
-        return getAllImagesLists().flatMap { list ->
-            val title = TimelineItem(imageId = null, title = list.name, date = null, listId = list.listId)
-            val imageData = findImages(imageIds = list.images, skip = 0, limit = list.images.size).
-                groupBy { image -> dateFormat.format(image.timestamp) }.
-                flatMap { (date, images) ->
-                    listOf(TimelineItem(imageId = null, title = null, date = date, listId = list.listId)) +
-                            images.
-                                sortedBy { it.timestamp }.
-                                map { TimelineItem(imageId = it.imageId, title = null, date = null, listId = list.listId) }
-                }
+    fun getTimelineData(head: Boolean = true, tail: Boolean = true): List<TimelineItem> {
+        return getAllImagesLists()
+            .filterIndexed{ index, _ -> (head && index == 0) || (tail && index > 0) }
+            .flatMap { list ->
+                val title = TimelineItem(imageId = null, title = list.name, date = null, listId = list.listId)
+                val imageData = findImages(imageIds = list.images, skip = 0, limit = list.images.size).
+                    groupBy { image -> dateFormat.format(image.timestamp) }.
+                    flatMap { (date, images) ->
+                        listOf(TimelineItem(imageId = null, title = null, date = date, listId = list.listId)) +
+                                images.
+                                    sortedBy { it.timestamp }.
+                                    map { TimelineItem(imageId = it.imageId, title = null, date = null, listId = list.listId) }
+                    }
 
-            listOf(title) + imageData
-        }
+                listOf(title) + imageData
+            }
     }
     data class TimelineItem(val imageId: String?, val title: String?, val date: String?, val listId: String)
 

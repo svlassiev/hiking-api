@@ -20,6 +20,12 @@ fun Routing.viewApi(path: String, imageClient: ImageClient): Route {
         get("/timeline/data") {
             call.respond(imageClient.getTimelineData())
         }
+        get("/timeline/data/head") {
+            call.respond(imageClient.getTimelineData(head = true, tail = false))
+        }
+        get("/timeline/data/tail") {
+            call.respond(imageClient.getTimelineData(head = false, tail = true))
+        }
     }
 }
 
