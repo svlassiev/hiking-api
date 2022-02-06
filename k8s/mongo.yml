@@ -7,7 +7,7 @@
 #  name: <new-account-name>
 #  namespace: <namespace>
 #---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: defaul-to-cluster-admin
@@ -21,7 +21,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: StorageClass
-apiVersion: storage.k8s.io/v1beta1
+apiVersion: storage.k8s.io/v1
 metadata:
   name: fast
 provisioner: kubernetes.io/gce-pd
@@ -42,13 +42,16 @@ spec:
   selector:
     app: mongo-cdc
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongo-cdc
 spec:
   serviceName: "mongo-cdc"
   replicas: 3
+  selector:
+    matchLabels:
+      app: mongo-cdc
   template:
     metadata:
       labels:
@@ -57,7 +60,6 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: mongo-cdc
-          image: mongo
           imagePullPolicy: Always
           command:
             - mongod
