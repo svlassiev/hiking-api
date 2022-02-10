@@ -60,6 +60,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: mongo-cdc
+          image: mongo:4.2
           imagePullPolicy: Always
           command:
             - mongod
