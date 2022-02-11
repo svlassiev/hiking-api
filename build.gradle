@@ -15,7 +15,7 @@ apply plugin: 'application'
 apply plugin: "com.github.johnrengelman.shadow"
 
 group 'info.vlassiev.serg'
-version '20.11.10'
+version '22.02.11'
 mainClassName = "io.ktor.server.netty.EngineMain"
 
 sourceSets {

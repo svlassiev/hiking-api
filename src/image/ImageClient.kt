@@ -1,5 +1,7 @@
 package info.vlassiev.serg.image
 
+import info.vlassiev.serg.cache.getTimelineDataCache
+import info.vlassiev.serg.cache.getimagesCache
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.repository.Repository
@@ -8,7 +10,11 @@ import java.text.SimpleDateFormat
 class ImageClient(private val repository: Repository) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-    fun getTimelineData(head: Boolean = true, tail: Boolean = true): List<TimelineItem> {
+
+    fun getTimelineData(head: Boolean = true, tail: Boolean = true): List<TimelineItem> =
+        getTimelineDataCache(head, tail).let { if (it.isEmpty()) loadTimelineData(head, tail) else it }
+
+    fun loadTimelineData(head: Boolean = true, tail: Boolean = true): List<TimelineItem> {
         return getAllImagesLists()
             .filterIndexed{ index, _ -> (head && index == 0) || (tail && index > 0) }
             .flatMap { list ->
@@ -41,6 +47,7 @@ class ImageClient(private val repository: Repository) {
         return imagesLists.filter { it.images.isEmpty() } + sortedListsWithImages
     }
 
+    fun getImages(imageIds: List<String>, skip: Int, limit: Int): List<Image> = getimagesCache(imageIds, skip, limit)
     fun findImages(imageIds: List<String>, skip: Int, limit: Int): List<Image> {
         return repository.findImages(imageIds, skip, limit)
     }

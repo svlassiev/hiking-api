@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseOptions
 import com.typesafe.config.ConfigFactory
 import info.vlassiev.serg.api.editApi
 import info.vlassiev.serg.api.viewApi
+import info.vlassiev.serg.cache.initializeCaches
 import info.vlassiev.serg.image.ImageClient
 import info.vlassiev.serg.repository.Repository
 import io.ktor.application.Application
@@ -52,6 +53,8 @@ fun Application.module() {
         .build()
 
     FirebaseApp.initializeApp(firebaseOptions)
+
+    initializeCaches(imageClient)
 
     routing {
         get("/") {

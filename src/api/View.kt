@@ -1,7 +1,6 @@
 package info.vlassiev.serg.api
 
 import info.vlassiev.serg.image.ImageClient
-import info.vlassiev.serg.model.VariantName.V1024
 import io.ktor.application.call
 import io.ktor.request.receive
 import io.ktor.response.respond
@@ -14,8 +13,7 @@ fun Routing.viewApi(path: String, imageClient: ImageClient): Route {
         }
         post("/images") {
             val request = call.receive<ImagesRequest>()
-            call.respond(imageClient.findImages(request.imageIds, request.skip, request.limit)
-                .map { it.copy(location = it.variants.find { v -> v.name == V1024 }?.location ?: it.location) })
+            call.respond(imageClient.getImages(request.imageIds, request.skip, request.limit))
         }
         get("/timeline/data") {
             call.respond(imageClient.getTimelineData())
