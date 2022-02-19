@@ -15,7 +15,7 @@ apply plugin: 'application'
 apply plugin: "com.github.johnrengelman.shadow"
 
 group 'info.vlassiev.serg'
-version '22.02.11'
+version '22.02.19'
 mainClassName = "io.ktor.server.netty.EngineMain"
 
 sourceSets {
@@ -42,7 +42,7 @@ dependencies {
     compile "com.google.cloud:google-cloud-storage:1.90.0"
     compile 'org.litote.kmongo:kmongo:3.11.0'
     compile group: 'org.imgscalr', name: 'imgscalr-lib', version: '4.2'
-    implementation 'com.google.firebase:firebase-admin:6.11.0'
+    implementation 'com.google.firebase:firebase-admin:8.1.0'
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
 }
 

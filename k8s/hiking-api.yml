@@ -33,7 +33,7 @@ spec:
         - name: svlassiev-dockerhub
       containers:
         - name: hiking-api
-          image: svlassiev/hiking-api:22.02.11
+          image: svlassiev/hiking-api:22.02.19
           imagePullPolicy: Always
           env:
             - name: MONGO_CONNECTION_STRING
