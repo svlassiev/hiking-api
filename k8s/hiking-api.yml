@@ -61,7 +61,7 @@ spec:
               memory: 10M
             limits:
               cpu: 100m
-              memory: 2560M
+              memory: 512M
           volumeMounts:
             - name: firebase-service-account
               mountPath: /firebase

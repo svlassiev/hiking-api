@@ -1,0 +1,57 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  IMAGE: svlassiev/hiking-api
+  DEPLOYMENT: hiking-api
+  GKE_CLUSTER: sixty-years-to-death
+  GKE_ZONE: europe-north1-a
+  GKE_PROJECT: thematic-acumen-225120
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          TAG="${GITHUB_SHA::8}"
+          docker build -t $IMAGE:$TAG -t $IMAGE:latest .
+          docker push $IMAGE:$TAG
+          docker push $IMAGE:latest
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ env.GKE_PROJECT }}
+
+      - name: Apply K8s manifests
+        run: |
+          kubectl apply -f k8s/hiking-api.yml
+          kubectl apply -f k8s/mongo.yml
+
+      - name: Deploy to GKE
+        run: |
+          kubectl set image deployment/$DEPLOYMENT \
+            $DEPLOYMENT=$IMAGE:$TAG
+          kubectl scale deployment/$DEPLOYMENT --replicas=0
+          kubectl scale deployment/$DEPLOYMENT --replicas=1
+          kubectl rollout status deployment/$DEPLOYMENT --timeout=120s

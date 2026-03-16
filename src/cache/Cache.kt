@@ -38,7 +38,7 @@ fun initializeCaches(imageClient: ImageClient) {
 
 fun resetTimelineDataCache(imageClient: ImageClient) {
     timelineHead = imageClient.loadTimelineData(head = true, tail = false)
-    timelineHead = imageClient.loadTimelineData(head = false, tail = true)
+    timelineTail = imageClient.loadTimelineData(head = false, tail = true)
 }
 
 fun resetImageCache(imageClient: ImageClient) {
