@@ -37,7 +37,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: MONGO_CONNECTION_STRING
-              value: "mongo-cdc-0.mongo-cdc:27017"
+              value: "hiking-mongo:27017"
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "/firebase/firebase-service-account.json"
             - name: ADMIN_EMAIL
@@ -58,10 +58,10 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 10M
+              memory: 256Mi
             limits:
-              cpu: 100m
-              memory: 512M
+              cpu: 200m
+              memory: 384Mi
           volumeMounts:
             - name: firebase-service-account
               mountPath: /firebase

@@ -2,6 +2,7 @@
 /.idea
 /out
 /build
+/data
 *.iml
 *.ipr
 *.iws

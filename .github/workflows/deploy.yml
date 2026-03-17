@@ -44,9 +44,7 @@ jobs:
           project_id: ${{ env.GKE_PROJECT }}
 
       - name: Apply K8s manifests
-        run: |
-          kubectl apply -f k8s/hiking-api.yml
-          kubectl apply -f k8s/mongo.yml
+        run: kubectl apply -f k8s/hiking-api.yml
 
       - name: Deploy to GKE
         run: |
