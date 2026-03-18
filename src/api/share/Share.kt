@@ -28,7 +28,7 @@ fun Routing.shareApi(path: String, imageClient: ImageClient): Route {
                 ?: return@get call.respondText("Image not found", status = HttpStatusCode.NotFound)
             val (title, imageUrl, description) = result
             call.respondText(
-                renderShareHtml(title, imageUrl, description, "/hiking"),
+                renderShareHtml(title, imageUrl, description, "/hiking?image=$imageId"),
                 shareContentType
             )
         }
