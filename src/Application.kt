@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.typesafe.config.ConfigFactory
 import info.vlassiev.serg.api.editApi
+import info.vlassiev.serg.api.share.shareApi
 import info.vlassiev.serg.api.viewApi
 import info.vlassiev.serg.cache.initializeCaches
 import info.vlassiev.serg.image.ImageClient
@@ -62,5 +63,6 @@ fun Application.module() {
         }
         viewApi("/hiking-api", imageClient)
         editApi("/hiking-api/edit", imageClient, adminEmail)
+        shareApi("/share", imageClient)
     }
 }
