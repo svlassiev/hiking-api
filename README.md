@@ -39,6 +39,14 @@ Automated via GitHub Actions. Every push to `master`:
 - `GET /hiking-api/timeline/data/head` — first album
 - `GET /hiking-api/timeline/data/tail` — remaining albums
 
+**Share previews (Open Graph):** serves both colorless and hiking share links
+- `GET /share/{folder}` — colorless album preview (OG tags + redirect)
+- `GET /share/{folder}/{n}` — colorless photo preview
+- `GET /share/hiking/album/{listId}` — hiking album preview
+- `GET /share/hiking/image/{imageId}` — hiking photo preview
+
+Colorless share routes resolve album metadata from the colorless-days-children nginx service (no DB needed). Hiking share routes use MongoDB.
+
 **Admin (requires Firebase ID token):**
 - `POST /hiking-api/edit/images-lists` — create album
 - `POST /hiking-api/edit/images` — add image (uploads to GCS, resizes to 4 variants)
