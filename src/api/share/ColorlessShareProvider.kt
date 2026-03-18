@@ -2,6 +2,7 @@ package info.vlassiev.serg.api.share
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("ColorlessShareProvider")
@@ -19,7 +20,6 @@ data class ColorlessAlbum(
 )
 
 data class ColorlessAlbumFiles(
-    val folder: String,
     val files: List<String>
 )
 
@@ -43,9 +43,9 @@ object ColorlessShareProvider {
         albumFiles?.let { return it }
         return try {
             val json = java.net.URL(ALBUMS_FILES_URL).readText()
-            Gson().fromJson(json, Array<ColorlessAlbumFiles>::class.java)
-                .associate { it.folder to it.files }
-                .also { albumFiles = it }
+            val type = object : TypeToken<Map<String, ColorlessAlbumFiles>>() {}.type
+            val parsed: Map<String, ColorlessAlbumFiles> = Gson().fromJson(json, type)
+            parsed.mapValues { it.value.files }.also { albumFiles = it }
         } catch (e: Exception) {
             logger.error("Failed to load albums-files.json: ${e.message}")
             emptyMap()
