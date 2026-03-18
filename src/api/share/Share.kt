@@ -16,7 +16,7 @@ fun Routing.shareApi(path: String, imageClient: ImageClient): Route {
                 ?: return@get call.respondText("Album not found", status = HttpStatusCode.NotFound)
             val (title, imageUrl, description) = result
             call.respondText(
-                renderShareHtml(title, imageUrl, description, "/hiking"),
+                renderShareHtml(title, imageUrl, description, "/hiking/timeline"),
                 shareContentType
             )
         }
@@ -40,8 +40,9 @@ fun Routing.shareApi(path: String, imageClient: ImageClient): Route {
             val result = ColorlessShareProvider.resolvePhoto(folder, n)
                 ?: return@get call.respondText("Photo not found", status = HttpStatusCode.NotFound)
             val (title, imageUrl) = result
+            val encodedFolder = java.net.URLEncoder.encode(folder, "UTF-8")
             call.respondText(
-                renderShareHtml("$title — $n", imageUrl, "serg.vlassiev.info", "/"),
+                renderShareHtml("$title — $n", imageUrl, "serg.vlassiev.info", "/preview.html?folder=$encodedFolder&n=$n"),
                 shareContentType
             )
         }
@@ -52,8 +53,9 @@ fun Routing.shareApi(path: String, imageClient: ImageClient): Route {
             val result = ColorlessShareProvider.resolveAlbum(folder)
                 ?: return@get call.respondText("Album not found", status = HttpStatusCode.NotFound)
             val (title, imageUrl) = result
+            val encodedFolder = java.net.URLEncoder.encode(folder, "UTF-8")
             call.respondText(
-                renderShareHtml(title, imageUrl, "serg.vlassiev.info", "/"),
+                renderShareHtml(title, imageUrl, "serg.vlassiev.info", "/folderIndex.html?folder=$encodedFolder"),
                 shareContentType
             )
         }
