@@ -2,14 +2,34 @@ package info.vlassiev.serg.image
 
 import info.vlassiev.serg.cache.getTimelineDataCache
 import info.vlassiev.serg.cache.getimagesCache
+import info.vlassiev.serg.cache.initializeCaches
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageList
 import info.vlassiev.serg.repository.Repository
+import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat
 
 class ImageClient(private val repository: Repository) {
 
+    private val logger = LoggerFactory.getLogger(ImageClient::class.java)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+
+    /**
+     * The timeline and the `images` endpoint are served from caches that used to be filled only
+     * at start-up, so nothing edited here was visible to readers until the next deploy. Every
+     * successful edit now rebuilds them from the database.
+     *
+     * A failed rebuild must NOT fail the edit: the edit is already in the database, and a client
+     * told that a registration failed will register the photo again. The stale cache is logged
+     * and left for the next edit (or restart) to repair.
+     */
+    private fun refreshCaches() {
+        try {
+            initializeCaches(this)
+        } catch (e: Exception) {
+            logger.error("Edit saved, but rebuilding the caches failed; readers see stale data until the next edit", e)
+        }
+    }
 
     fun getTimelineData(head: Boolean = true, tail: Boolean = true): List<TimelineItem> =
         getTimelineDataCache(head, tail).let { if (it.isEmpty()) loadTimelineData(head, tail) else it }
@@ -60,27 +80,32 @@ class ImageClient(private val repository: Repository) {
 
     fun updateImagesListName(listId: String, request: UpdateListNameRequest) {
         repository.updateImagesListName(listId, request.listName)
+        refreshCaches()
     }
 
     data class UpdateListNameRequest(val listName: String)
 
     fun updateImageDescription(imageId: String, request: UpdateImageDescriptionRequest) {
         repository.updateImageDescription(imageId, request.description)
+        refreshCaches()
     }
 
     data class UpdateImageDescriptionRequest(val description: String)
 
     fun addImagesList(imagesList: ImageList) {
         repository.insertImagesList(imagesList)
+        refreshCaches()
     }
 
     fun deleteImagesList(listId: String) {
         repository.deleteImagesLists(listOf(listId))
+        refreshCaches()
     }
 
     fun deleteImage(listId: String, imageId: String) {
         repository.deleteImageFromList(listId, imageId)
         repository.deleteImages(listOf(imageId))
+        refreshCaches()
     }
 
     fun addImageFromGoogleStorage(request: AddImageRequest): Image {
@@ -89,6 +114,7 @@ class ImageClient(private val repository: Repository) {
         val list = repository.findImagesList(request.listId)
         val updatedList = list.copy(images = list.images + image.imageId)
         repository.replaceImagesList(updatedList)
+        refreshCaches()
         return image
     }
 

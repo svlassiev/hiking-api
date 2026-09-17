@@ -6,9 +6,12 @@ import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.VariantName
 import java.util.*
 
-private var timelineHead: List<TimelineItem> = emptyList()
-private var timelineTail: List<TimelineItem> = emptyList()
-private var images: SortedMap<String, Image> = emptyMap<String, Image>().toSortedMap()
+// Rebuilt at start-up and after every edit (ImageClient.refreshCaches). Each is replaced whole by
+// a freshly built immutable value, so a reader sees either the old one or the new one; @Volatile
+// makes the swap visible to the request threads straight away.
+@Volatile private var timelineHead: List<TimelineItem> = emptyList()
+@Volatile private var timelineTail: List<TimelineItem> = emptyList()
+@Volatile private var images: SortedMap<String, Image> = emptyMap<String, Image>().toSortedMap()
 
 fun getTimelineDataCache(head: Boolean = true, tail: Boolean = true): List<TimelineItem> {
     return if (head && tail) {
