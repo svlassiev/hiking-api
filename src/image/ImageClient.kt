@@ -25,7 +25,9 @@ class ImageClient(private val repository: Repository) {
      */
     private fun refreshCaches() {
         try {
+            val started = System.currentTimeMillis()
             initializeCaches(this)
+            logger.info("Caches rebuilt in ${System.currentTimeMillis() - started} ms")
         } catch (e: Exception) {
             logger.error("Edit saved, but rebuilding the caches failed; readers see stale data until the next edit", e)
         }
