@@ -4,46 +4,20 @@ import com.drew.metadata.Directory
 import com.google.cloud.storage.*
 import info.vlassiev.serg.model.Image
 import info.vlassiev.serg.model.ImageVariant
+import info.vlassiev.serg.model.VariantName
 import info.vlassiev.serg.model.VariantName.*
-import org.imgscalr.Scalr
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.FileInputStream
 import java.net.URL
 import java.nio.file.Files
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
-import javax.imageio.ImageIO
 
 const val bucketName = "colorless-days-children"
 val storage: Storage = StorageOptions.getDefaultInstance().service
 
 private val logger = LoggerFactory.getLogger("ImageManager")
-
-fun resize(imageFile: File, size: Int): File? {
-    logger.info("Resizing file $imageFile to ${size}px")
-    var outputFile: File? = null
-    try {
-        outputFile = Files.createTempFile("", ".jpg").toFile()
-        outputFile.deleteOnExit()
-        val image = ImageIO.read(imageFile)
-        val scaledImage = Scalr.resize(image, if (size < 100) Scalr.Method.SPEED else Scalr.Method.ULTRA_QUALITY, size)
-        ImageIO.write(scaledImage, "JPEG", outputFile)
-        logger.info("Scaled image is saved to $outputFile")
-        return outputFile
-    } catch (t: Throwable) {
-        logger.error("Unable to resize image $imageFile", t)
-        if (outputFile != null) {
-            try {
-                outputFile.delete()
-            } catch (t: Throwable) {
-                logger.error("Error deleting failed file: ${t.message}", t)
-            }
-        }
-    }
-    return outputFile
-}
 
 fun printMetadata(directory: Directory) {
     directory.tags.forEach { println("${directory.name}\t${it.tagName}\t${it.description}") }
@@ -62,23 +36,17 @@ private fun Blob.toImage(): Image {
         tempFile = Files.createTempFile("", ".jpg").toFile()
         tempFile.deleteOnExit()
         this.downloadTo(tempFile.toPath())
-        val variants = listOf(
-            ".jpg" to DEFAULT,
-            "_thumbnail.jpg" to THUMBNAIL,
-            "_2048.jpg" to V2048,
-            "_1024.jpg" to V1024,
-            "_800.jpg" to V800)
-            .map { (suffix, variantName) ->
-                val fileName = "${this.name}".replace(".jpg", suffix, true)
-                val variantLocation = "https://storage.googleapis.com/${this.bucket}/$fileName"
-                when (variantName) {
-                    THUMBNAIL -> resizeAndUpload(tempFile, fileName, 80)
-                    V2048 -> resizeAndUpload(tempFile, fileName, 2048)
-                    V1024 -> resizeAndUpload(tempFile, fileName, 1024)
-                    V800 -> resizeAndUpload(tempFile, fileName, 800)
-                }
-                ImageVariant(variantName, variantLocation)
-            }
+        val suffixes = mapOf(DEFAULT to ".jpg", THUMBNAIL to "_thumbnail.jpg", V2048 to "_2048.jpg", V1024 to "_1024.jpg", V800 to "_800.jpg")
+        fun objectName(variantName: VariantName) = "${this.name}".replace(".jpg", suffixes.getValue(variantName), true)
+
+        val started = System.currentTimeMillis()
+        makeVariants(tempFile) { variantName, file ->
+            upload(file, objectName(variantName))
+        }
+        logger.info("Variants made and uploaded in ${System.currentTimeMillis() - started} ms")
+        // Same list, same order as before: the original first, then the copies.
+        val variants = listOf(DEFAULT, THUMBNAIL, V2048, V1024, V800)
+            .map { ImageVariant(it, "https://storage.googleapis.com/${this.bucket}/${objectName(it)}") }
         val draft = Image(
             imageId = UUID.randomUUID().toString(),
             location = variants.first { it.name == DEFAULT }.location,
@@ -104,9 +72,8 @@ private fun Blob.toImage(): Image {
     }
 }
 
-private fun resizeAndUpload(originalImage: File, uploadPath: String, size: Int) {
-    val resizedFile = resize(originalImage, size)
-    val content = FileInputStream(resizedFile).readBytes()
+private fun upload(file: File, uploadPath: String) {
+    val content = file.readBytes()
     val blobId = BlobId.of(bucketName, uploadPath)
     val blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpg").build()
     logger.info("Uploading to $uploadPath")

@@ -42,7 +42,16 @@ dependencies {
     compile 'org.litote.kmongo:kmongo:3.11.0'
     compile group: 'org.imgscalr', name: 'imgscalr-lib', version: '4.2'
     implementation 'com.google.firebase:firebase-admin:8.1.0'
-    testCompile "io.ktor:ktor-server-tests:$ktor_version"
+    // Not ktor-server-tests: its 1.2.4 needs kotlinx-serialization-runtime 0.12.0, which only
+    // ever lived on JCenter (gone) — it could not resolve, which went unnoticed while there were no tests.
+    testCompile "junit:junit:4.13.2"
+}
+
+// The production pod's heap (JDK 8 default for its 384Mi limit, measured 2026-09-18): the image
+// tests must pass inside it, because that is where the old resize code ran out of memory.
+test {
+    maxHeapSize = '126m'
+    testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
 }
 
 shadowJar {
